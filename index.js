@@ -76,12 +76,17 @@ async function run() {
 
     // GET all jobs
     app.get("/services", async (req, res) => {
-      // let query = {};
-      // if (email) {
-      //   query = { hr_email: email };
-      // }
-      const result = await serviceCollection.find().toArray();
-      res.send(result);
+      const searchTerm = req.query.searchTerm || "";
+
+      try {
+        const result = await serviceCollection
+          .find({ serviceName: { $regex: searchTerm, $options: "i" } })
+          .toArray();
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+        res.status(500).send({ error: true, message: "Internal Server Error" });
+      }
     });
 
     // GET Service by ID
@@ -96,6 +101,23 @@ async function run() {
     app.post("/add-service", async (req, res) => {
       const job = req.body;
       const result = await serviceCollection.insertOne(job);
+      res.send(result);
+    });
+
+    // POST a new Booking
+    app.post("/add-booking", async (req, res) => {
+      const booking = req.body;
+      const result = await bookingCollection.insertOne(booking);
+      res.send(result);
+    });
+
+    //GET Bookings by email
+    app.get("/bookings", async (req, res) => {
+      const email = req.query.email;
+
+      const result = await bookingCollection
+        .find({ userEmail: email })
+        .toArray();
       res.send(result);
     });
 
