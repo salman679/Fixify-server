@@ -74,19 +74,14 @@ async function run() {
         .send({ success: true });
     });
 
-    // GET all jobs
+    // GET all Services
     app.get("/services", async (req, res) => {
       const searchTerm = req.query.searchTerm || "";
 
-      try {
-        const result = await serviceCollection
-          .find({ serviceName: { $regex: searchTerm, $options: "i" } })
-          .toArray();
-        res.send(result);
-      } catch (error) {
-        console.log(error);
-        res.status(500).send({ error: true, message: "Internal Server Error" });
-      }
+      const result = await serviceCollection
+        .find({ serviceName: { $regex: searchTerm, $options: "i" } })
+        .toArray();
+      res.send(result);
     });
 
     // GET Service by ID
@@ -118,6 +113,63 @@ async function run() {
       const result = await bookingCollection
         .find({ userEmail: email })
         .toArray();
+      res.send(result);
+    });
+
+    //manage services
+    app.get("/manage-services", async (req, res) => {
+      const email = req.query.email;
+      const result = await serviceCollection
+        .find({ providerEmail: email })
+        .toArray();
+      res.send(result);
+    });
+
+    //update service
+    app.put("/manage-services/:id", async (req, res) => {
+      const id = req.params.id;
+      const updatedService = req.body;
+      const query = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = { $set: updatedService };
+      const result = await serviceCollection.updateOne(
+        query,
+        updateDoc,
+        options
+      );
+      res.send(result);
+    });
+
+    //delete service
+    app.delete("/manage-services/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await serviceCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    //service provider related apis
+    app.get("/services-to-do", async (req, res) => {
+      const email = req.query.email;
+
+      const result = await bookingCollection
+        .find({ providerEmail: email })
+        .toArray();
+      res.send(result);
+    });
+
+    //status update in service to do
+    app.put("/services-to-do/:id", async (req, res) => {
+      const id = req.params.id;
+      const updatedStatus = req.body;
+      const query = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = { $set: updatedStatus };
+      const result = await bookingCollection.updateOne(
+        query,
+        updateDoc,
+        options
+      );
       res.send(result);
     });
 
