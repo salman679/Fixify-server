@@ -128,26 +128,10 @@ async function run() {
     app.patch("/manage-services/:id", async (req, res) => {
       const id = req.params.id;
       const updatedService = req.body;
-
-      if (!ObjectId.isValid(id)) {
-        return res.status(400).send({ message: "Invalid ID format" });
-      }
-
       const query = { _id: new ObjectId(id) };
       const updateDoc = { $set: updatedService };
-
-      try {
-        const result = await serviceCollection.updateOne(query, updateDoc);
-
-        if (result.matchedCount === 0) {
-          return res.status(404).send({ message: "Service not found" });
-        }
-
-        res.send({ modifiedCount: result.modifiedCount });
-      } catch (error) {
-        console.error("Error updating service:", error);
-        res.status(500).send({ message: "Internal server error" });
-      }
+      const result = await serviceCollection.updateOne(query, updateDoc);
+      res.send(result);
     });
 
     //delete service
