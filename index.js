@@ -9,7 +9,11 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://peak-summer-445602-e8.web.app"],
+    origin: [
+      "http://localhost:5173",
+      "https://peak-summer-445602-e8.web.app",
+      "https://peak-summer-445602-e8.firebaseapp.com",
+    ],
     credentials: true,
   })
 );
