@@ -75,8 +75,10 @@ async function run() {
     });
 
     //clear cookie
-    app.get("/logout", (req, res) => {
-      res.clearCookie("token").send({ success: true });
+    app.post("/logout", (req, res) => {
+      res
+        .clearCookie("token", { httpOnly: true, secure: false })
+        .send({ success: true });
     });
 
     // GET all Services
@@ -90,7 +92,7 @@ async function run() {
     });
 
     // GET Service by ID
-    app.get("/services/:id", async (req, res) => {
+    app.get("/services/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await serviceCollection.findOne(query);
@@ -98,22 +100,30 @@ async function run() {
     });
 
     // POST a new Service
-    app.post("/add-service", async (req, res) => {
-      const job = req.body;
-      const result = await serviceCollection.insertOne(job);
+    app.post("/add-service", verifyToken, async (req, res) => {
+      const newService = req.body;
+      console.log();
+
+      const result = await serviceCollection.insertOne(newService);
       res.send(result);
     });
 
     // POST a new Booking
-    app.post("/add-booking", async (req, res) => {
+    app.post("/add-booking", verifyToken, async (req, res) => {
       const booking = req.body;
       const result = await bookingCollection.insertOne(booking);
       res.send(result);
     });
 
     //GET Bookings by email
-    app.get("/bookings", async (req, res) => {
+    app.get("/bookings", verifyToken, async (req, res) => {
       const email = req.query.email;
+
+      if (req.decoded.email !== email) {
+        return res
+          .status(403)
+          .send({ error: true, message: "forbidden access" });
+      }
 
       const result = await bookingCollection
         .find({ userEmail: email })
@@ -122,15 +132,21 @@ async function run() {
     });
 
     //manage services
-    app.get("/manage-services", async (req, res) => {
+    app.get("/manage-services", verifyToken, async (req, res) => {
       const email = req.query.email;
+
+      if (req.decoded.email !== email) {
+        return res
+          .status(403)
+          .send({ error: true, message: "forbidden access" });
+      }
       const result = await serviceCollection
         .find({ providerEmail: email })
         .toArray();
       res.send(result);
     });
 
-    app.patch("/manage-services/:id", async (req, res) => {
+    app.patch("/manage-services/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const updatedService = req.body;
       const query = { _id: new ObjectId(id) };
@@ -140,7 +156,7 @@ async function run() {
     });
 
     //delete service
-    app.delete("/manage-services/:id", async (req, res) => {
+    app.delete("/manage-services/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await serviceCollection.deleteOne(query);
@@ -148,8 +164,14 @@ async function run() {
     });
 
     //service provider related apis
-    app.get("/services-to-do", async (req, res) => {
+    app.get("/services-to-do", verifyToken, async (req, res) => {
       const email = req.query.email;
+
+      if (req.decoded.email !== email) {
+        return res
+          .status(403)
+          .send({ error: true, message: "forbidden access" });
+      }
 
       const result = await bookingCollection
         .find({ providerEmail: email })
@@ -158,7 +180,7 @@ async function run() {
     });
 
     //status update in service to do
-    app.put("/services-to-do/:id", async (req, res) => {
+    app.put("/services-to-do/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const updatedStatus = req.body;
       const query = { _id: new ObjectId(id) };
@@ -171,55 +193,6 @@ async function run() {
       );
       res.send(result);
     });
-
-    // // UPDATE job by ID
-    // app.put("/jobs/:id", async (req, res) => {
-    //   const id = req.params.id;
-    //   const updatedJob = req.body;
-    //   const query = { _id: new ObjectId(id) };
-    //   const options = { upsert: true };
-    //   const updateDoc = { $set: updatedJob };
-    //   const result = await jobCollection.updateOne(query, updateDoc, options);
-    //   res.send(result);
-    // });
-
-    // // DELETE job by ID
-    // app.delete("/jobs/:id", async (req, res) => {
-    //   const id = req.params.id;
-    //   const query = { _id: new ObjectId(id) };
-    //   const result = await jobCollection.deleteOne(query);
-    //   res.send(result);
-    // });
-
-    // // GET job applications by email
-    // app.get("/jobApplications", verifyToken, async (req, res) => {
-    //   const email = req.query.email;
-
-    //   if (req.decoded.email !== email) {
-    //     return res
-    //       .status(403)
-    //       .send({ error: true, message: "forbidden access" });
-    //   }
-
-    //   const userApplications = await jobApplicationCollection
-    //     .find({ email: email })
-    //     .toArray();
-
-    //   // Fetch jobs based on jobIds
-    //   const jobId = userApplications.map((job) => job.jobId);
-    //   const result = await jobCollection
-    //     .find({ _id: { $in: jobId.map((id) => new ObjectId(id)) } })
-    //     .toArray();
-
-    //   res.send(result);
-    // });
-
-    // // POST a new job application
-    // app.post("/jobApplications", async (req, res) => {
-    //   const jobApplication = req.body;
-    //   const result = await jobApplicationCollection.insertOne(jobApplication);
-    //   res.send(result);
-    // });
 
     // Ping MongoDB to confirm connection
     await client.db("admin").command({ ping: 1 });
