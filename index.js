@@ -66,12 +66,17 @@ async function run() {
     //auth related apis
     app.post("/jwt", async (req, res) => {
       const user = req.body;
-      const token = jwt.sign(user, process.env.JWT_ACCESS_TOKEN, {
+      const token = jwt.sign(user, process.env.JWT_TOKEN, {
         expiresIn: "1h",
       });
       res
         .cookie("token", token, { httpOnly: true, secure: false })
         .send({ success: true });
+    });
+
+    //clear cookie
+    app.get("/logout", (req, res) => {
+      res.clearCookie("token").send({ success: true });
     });
 
     // GET all Services
