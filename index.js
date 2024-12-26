@@ -9,7 +9,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: ["http://localhost:5173", "https://peak-summer-445602-e8.web.app"],
     credentials: true,
   })
 );
@@ -33,7 +33,7 @@ const verifyToken = (req, res, next) => {
       .send({ error: true, message: "Unauthorized access" });
   }
 
-  jwt.verify(token, process.env.JWT_ACCESS_TOKEN, (err, decoded) => {
+  jwt.verify(token, process.env.JWT_TOKEN, (err, decoded) => {
     if (err) {
       return res
         .status(401)
@@ -58,7 +58,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const serviceCollection = client.db("Fixify").collection("Services");
     const bookingCollection = client.db("Fixify").collection("Bookings");
@@ -67,17 +67,25 @@ async function run() {
     app.post("/jwt", async (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.JWT_TOKEN, {
-        expiresIn: "1h",
+        expiresIn: "5h",
       });
       res
-        .cookie("token", token, { httpOnly: true, secure: false })
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
         .send({ success: true });
     });
 
     //clear cookie
     app.post("/logout", (req, res) => {
       res
-        .clearCookie("token", { httpOnly: true, secure: false })
+        .clearCookie("token", {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
         .send({ success: true });
     });
 
@@ -96,13 +104,13 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await serviceCollection.findOne(query);
+
       res.send(result);
     });
 
     // POST a new Service
     app.post("/add-service", verifyToken, async (req, res) => {
       const newService = req.body;
-      console.log();
 
       const result = await serviceCollection.insertOne(newService);
       res.send(result);
@@ -195,10 +203,10 @@ async function run() {
     });
 
     // Ping MongoDB to confirm connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
     // Comment this out for long-running servers
     // await client.close();
