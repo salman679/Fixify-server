@@ -1,9 +1,10 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const app = express();
 const cookie = require("cookie-parser");
-require("dotenv").config();
+
 const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
@@ -21,11 +22,11 @@ app.use(express.json());
 app.use(cookie());
 
 app.get("/", (req, res) => {
-  res.send("Job portal server is running...");
+  res.send("Fixify server is running...");
 });
 
 app.listen(port, () => {
-  console.log(`Job portal server is running on port ${port}`);
+  console.log(`Fixify server is running on port ${port}`);
 });
 
 const verifyToken = (req, res, next) => {
@@ -86,7 +87,7 @@ async function run() {
     app.post("/logout", (req, res) => {
       res
         .clearCookie("token", {
-          httpOnly: true,
+          maxAge: 0,
           secure: process.env.NODE_ENV === "production",
           sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
         })
